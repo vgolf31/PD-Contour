@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Hospital Image Classification</title>
+</head>
+<body>
+    <header>
+        <div class="header-text">Parkinson's Analysis Tool</div>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/hospital_logo.png') }}" alt="Hospital Logo">
+        </div>
+        <nav class="menu">
+            <a href="#about">About</a>
+            <a href="#classifier">PD Classification</a>
+            <a href="#contour">PD Contour</a>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <!-- About Section -->
+        <section id="about" class="section">
+            <h1>Welcome to Our Hospital Image Classification System</h1>
+            <p>Our hospital uses advanced image classification technology to assist in diagnoses. Upload an image below for classification or MRI for contour masking.</p>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Disease Description Section -->
+        <section id="disease-description" class="section">
+            <h2>About Parkinson's Disease</h2>
+            <p>Parkinson's Disease (PD) is a progressive neurological disorder that primarily affects movement. It occurs due to the degeneration of dopamine-producing neurons in the brain, particularly in a region called the substantia nigra. Key symptoms include:</p>
+            <ul>
+                <li><strong>Motor Symptoms:</strong> These include tremors (shaking), stiffness, slowness of movement (bradykinesia), and postural instability. Patients may also experience difficulty with balance and coordination.</li>
+                <li><strong>Non-Motor Symptoms:</strong> These can involve sleep disturbances, depression, anxiety, cognitive changes, and autonomic dysfunction (e.g., blood pressure issues, digestive problems).</li>
+            </ul>
+            <p>The exact cause of Parkinson's disease is not fully understood, but it is believed to involve a combination of genetic and environmental factors. While there is currently no cure, various treatments, including medications, physical therapy, and in some cases, surgical interventions, can help manage symptoms and improve quality of life.</p>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Classifier Section -->
+        <section id="classifier" class="section">
+            <h2>Image Classifier: Parkinson's Detection</h2>
+            <p>Upload an MRI image below to classify that patient as possessing PD or not.</p>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" id="fileInput" accept="image/*" required>
+                <button type="submit">Classify</button>
+            </form>
+            <div id="loadingText" style="display: none;">Loading, please wait...</div>
+            <div id="resultBox" style="display: none;">
+                <p id="resultText">Predicted Class: </p>
+            </div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Contour Masking Section -->
+        <section id="contour" class="section">
+            <h2>MRI Contour Plot: Substantia Nigra Mask</h2>
+            <p>Upload an MRI below to mark contours on the scan to help detect the SN.</p>
+            <p>Patients possessing PD generally have shrunken Substantia Nigra(SN) structures in the midbrain. These structures are difficult to detect with the naked eye. Shrunken SNs generally mean thicker contours, also allowing contours to classify between PD Patients and Non PD Patients.</p>
+            <form id="maskForm" enctype="multipart/form-data">
+                <input type="file" name="file" id="mriInput" accept="image/*" required>
+                <button type="submit">Generate Mask</button>
+            </form>
+            <div id="loadingTextMask" style="display: none;">Loading, please wait...</div>
+            <div id="maskResult" style="display: none;">
+                <h3>Masked MRI Image:</h3>
+                <img id="maskedImage" src="" alt="Masked MRI">
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // JavaScript for handling form submissions
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const fileInput = document.getElementById('fileInput');
+            formData.append('file', fileInput.files[0]);
+
+            const loadingText = document.getElementById('loadingText');
+            loadingText.style.display = 'block';  // Show loading text
+
+            fetch('/predict', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                const resultBox = document.getElementById('resultBox');
+                const resultText = document.getElementById('resultText');
+                loadingText.style.display = 'none';  // Hide loading text
+                if (data.prediction) {
+                    resultText.textContent = `Predicted Class: ${data.prediction}`;
+                    resultBox.style.display = 'block';
+                }
+            });
+        });
+
+        document.getElementById('maskForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const mriInput = document.getElementById('mriInput');
+            formData.append('file', mriInput.files[0]);
+
+            const loadingTextMask = document.getElementById('loadingTextMask');
+            loadingTextMask.style.display = 'block';  // Show loading text
+
+            fetch('/mask', { method: 'POST', body: formData })
+            .then(response => response.blob())
+            .then(blob => {
+                const maskResult = document.getElementById('maskResult');
+                const maskedImage = document.getElementById('maskedImage');
+                maskedImage.src = URL.createObjectURL(blob);
+                loadingTextMask.style.display = 'none';  // Hide loading text
+                maskResult.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
